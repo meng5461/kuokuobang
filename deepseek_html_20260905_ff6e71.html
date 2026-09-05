@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>吃饭选择转盘</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f0f2f5;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+            font-weight: 500;
+            letter-spacing: 2px;
+        }
+        .wheel-wrapper {
+            position: relative;
+            width: 420px;
+            height: 420px;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+            background: #fff;
+            display: block;
+        }
+        .btn-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 4px solid #ffffff;
+            background: #ff6b35;
+            color: #fff;
+            font-size: 26px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.5);
+            transition: all 0.15s;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .btn-center:hover {
+            background: #e85a2a;
+            transform: translate(-50%, -50%) scale(1.05);
+            box-shadow: 0 6px 18px rgba(255, 107, 53, 0.6);
+        }
+        .btn-center:active {
+            transform: translate(-50%, -50%) scale(0.95);
+        }
+        .result-box {
+            margin-top: 30px;
+            padding: 12px 30px;
+            background: #ffffff;
+            border-radius: 40px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            font-size: 22px;
+            font-weight: 600;
+            color: #333;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s;
+        }
+        .result-box span {
+            color: #ff6b35;
+        }
+        @media (max-width: 500px) {
+            .wheel-wrapper {
+                width: 320px;
+                height: 320px;
+            }
+            .btn-center {
+                width: 64px;
+                height: 64px;
+                font-size: 20px;
+            }
+            .result-box {
+                font-size: 18px;
+                padding: 10px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🍽️ 今天吃什么？</h1>
+    <div class="wheel-wrapper">
+        <canvas id="wheelCanvas" width="600" height="600"></canvas>
+        <button class="btn-center" id="spinBtn">GO</button>
+    </div>
+    <div class="result-box" id="resultDisplay">
+        👆 点中间转一下
+    </div>
+</div>
+<script>
+    (function() {
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        const spinBtn = document.getElementById('spinBtn');
+        const resultDisplay = document.getElementById('resultDisplay');
+
+        // 更新后的选项列表（共 9 项）
+        const items = [
+            '炒菜', '西餐', '火锅', '烧烤', '烤肉',
+            '罗邹记', '肉蟹煲', '火锅鸡', '铁锅炖'
+        ];
+
+        // 颜色（取9种明亮色）
+        const colors = [
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8',
+            '#F7DC6F', '#BB8FCE', '#F1948A', '#82E0AA'
+        ];
+
+        const segmentCount = items.length;
+        const arcSize = (2 * Math.PI) / segmentCount;
+
+        let currentAngle = 0;
+        let spinning = false;
+
+        function drawWheel(rotation) {
+            ctx.clearRect(0, 0, 600, 600);
+            ctx.save();
+            ctx.translate(300, 300);
+            ctx.rotate(rotation);
+
+            for (let i = 0; i < segmentCount; i++) {
+                const startAngle = i * arcSize;
+                const endAngle = startAngle + arcSize;
+
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.arc(0, 0, 280, startAngle, endAngle);
+                ctx.closePath();
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                ctx.save();
+                ctx.rotate(startAngle + arcSize / 2);
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#1e1e1e';
+                ctx.font = 'bold 26px "PingFang SC", "Microsoft YaHei", sans-serif';
+                const textRadius = 190;
+                ctx.fillText(items[i], textRadius, 0);
+                ctx.restore();
+            }
+
+            ctx.beginPath();
+            ctx.arc(0, 0, 40, 0, 2 * Math.PI);
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowColor = 'rgba(0,0,0,0.1)';
+            ctx.shadowBlur = 10;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            ctx.restore();
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(300, 300, 280, 0, 2 * Math.PI);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 6;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawPointer() {
+            ctx.save();
+            ctx.translate(300, 20);
+            ctx.beginPath();
+            ctx.moveTo(0, -10);
+            ctx.lineTo(-14, 12);
+            ctx.lineTo(14, 12);
+            ctx.closePath();
+            ctx.fillStyle = '#ff3b30';
+            ctx.shadowColor = 'rgba(255,59,48,0.5)';
+            ctx.shadowBlur = 12;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        }
+
+        function getCurrentItem(rotation) {
+            const pointerAngle = -Math.PI / 2;
+            let raw = (pointerAngle - rotation) % (2 * Math.PI);
+            if (raw < 0) raw += 2 * Math.PI;
+            const idx = Math.floor(raw / arcSize);
+            return idx % segmentCount;
+        }
+
+        function updateResult(rotation) {
+            const idx = getCurrentItem(rotation);
+            resultDisplay.innerHTML = `🎯 今天去吃 <span>${items[idx]}</span> 吧！`;
+        }
+
+        drawWheel(currentAngle);
+        drawPointer();
+        updateResult(currentAngle);
+
+        function spinWheel() {
+            if (spinning) return;
+            spinning = true;
+            spinBtn.disabled = true;
+            resultDisplay.innerHTML = '🌀 转起来...';
+
+            const extraSpins = 5 + Math.random() * 4;
+            const targetAngle = currentAngle + extraSpins * 2 * Math.PI + Math.random() * 2 * Math.PI;
+
+            const startAngle = currentAngle;
+            const totalRotation = targetAngle - startAngle;
+            const duration = 4000 + Math.random() * 2000;
+            const startTime = performance.now();
+
+            function animate(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 4);
+                const currentRot = startAngle + totalRotation * eased;
+
+                drawWheel(currentRot);
+                drawPointer();
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    currentAngle = currentRot;
+                    spinning = false;
+                    spinBtn.disabled = false;
+                    updateResult(currentAngle);
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        spinBtn.addEventListener('click', spinWheel);
+        window.addEventListener('resize', () => {
+            drawWheel(currentAngle);
+            drawPointer();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.key === 'Space') {
+                e.preventDefault();
+                spinWheel();
+            }
+        });
+        resultDisplay.addEventListener('click', spinWheel);
+    })();
+</script>
+</body>
+</html>
